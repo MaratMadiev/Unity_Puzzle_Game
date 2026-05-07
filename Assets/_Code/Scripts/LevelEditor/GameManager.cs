@@ -91,7 +91,7 @@ public class GameManager : MonoBehaviour
         startGateways = new List<Gateway>();
         finishGateways = new List<Gateway>();
 
-        LevelSO curLvl = levelSO;
+        LevelSO curLvl = LevelContext.CurrentLevel;
         roadIdToStartGateway = new();
         roadIdToFinishGateway = new();
         startGwToFinishGw = new(); 

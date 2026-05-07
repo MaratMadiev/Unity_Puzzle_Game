@@ -12,18 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 644595c52bbc5a245af7fbeb66b27b3b, type: 3}
   m_Name: Level1
   m_EditorClassIdentifier: 
-  levelNumber: 0
-  levelName: 
+  levelNumber: 1
+  levelName: First
   startGateways:
   - gatewayId: 0
     intensity: 10
     roadStart: {x: -100, y: -20}
     roadfinish: {x: -77, y: -20}
-    targetGatewayIds: 02000000
-  - gatewayId: 1
-    intensity: 24
-    roadStart: {x: -100, y: 20}
-    roadfinish: {x: -77, y: 20}
     targetGatewayIds: 02000000
   finishGateways:
   - gatewayId: 2
