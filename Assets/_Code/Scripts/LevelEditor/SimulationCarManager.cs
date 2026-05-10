@@ -1,22 +1,23 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
 public class SimulationCarManager : MonoBehaviour
 {
-    public int CarsPassedMax { get; private set; }
     public int CarsPassedLast { get; private set; }
     public bool IsCurrentlySimulating { get; private set; }
+    public float SimualtionCoef { get; private set; }
 
     [SerializeField]
     GameObject carPrefab;
     [SerializeField]
     List<GameObject> carModelPrefabs;
-    
-    
+
+
 
     public GameObject CarPrefab { get => carPrefab; }
     public GameObject RandomCarModel { get => carModelPrefabs[Random.Range(0, carModelPrefabs.Count)]; }
@@ -27,7 +28,7 @@ public class SimulationCarManager : MonoBehaviour
         if (IsCurrentlySimulating) return;
         StartCoroutine(SimulateCoroutine(callback));
     }
-    
+
     IEnumerator SimulateCoroutine(Action callback)
     {
         GetComponent<LevelEditor>().SetNone();
@@ -35,8 +36,8 @@ public class SimulationCarManager : MonoBehaviour
         IsCurrentlySimulating = true;
 
         GameManager gm = GetComponent<GameManager>();
-       
-        Dictionary<(int, int), List<(List<GraphNode>, float) >> allPathes = new();
+
+        Dictionary<(int, int), List<(List<GraphNode>, float)>> allPathes = new();
         int seed = 147;
         var paths = gm.CurrentPaths;
         int carsResult = 0;
@@ -45,6 +46,7 @@ public class SimulationCarManager : MonoBehaviour
 
         foreach (var indexPath in paths)
         {
+
             foreach (var subPath in indexPath.Value)
             {
                 var kShortest = gm.FindKShortestPaths(subPath.Item1, subPath.Item2, 15);
@@ -55,40 +57,39 @@ public class SimulationCarManager : MonoBehaviour
         }
 
         List<(Car, int, int, List<GraphNode>)> currentCars = new();
-        Dictionary<int, float> gwTimers = new();
+        Dictionary<(int, int), float> gwTimers = new();
 
-        Collider[] coll = new Collider[1];
-
-
+        Collider[] coll = new Collider[5];
 
         float duration = 20;
         float elapsed = 0;
         float timeCoef = 10;
         float timeScaled = 0;
 
+        var allPathList = allPathes.ToList();
+
         while (elapsed < duration)
         {
             currentCars.RemoveAll(car => car.Item1 == null);
-            
+
             float dt = Time.deltaTime * timeCoef;
             timeScaled += dt;
 
+            var path = allPathList[Random.Range(0, allPathList.Count)];
 
-            foreach (var path in allPathes)
+            var startGw = gm.StartGateways.First(gw => gw.Id == path.Key.Item1);
+            var endGw = gm.EndGateways.First(gw => gw.Id == path.Key.Item2);
+            int layerMask = LayerMask.GetMask("car");
+
+            if (!gwTimers.ContainsKey(path.Key)) gwTimers[path.Key] = timeScaled + 60f / startGw.Intensity;
+
+            if (timeScaled > gwTimers[path.Key])
             {
-                var startGw = gm.StartGateways.Where(gw => gw.Id == path.Key.Item1).First();
-                var endGw = gm.EndGateways.Where(gw => gw.Id == path.Key.Item2).First();
-                int layerMask = LayerMask.GetMask("car");
-
-                if (!gwTimers.ContainsKey(path.Key.Item1)) gwTimers[path.Key.Item1] = timeScaled + 60f / startGw.Intensity;
-
-                if (timeScaled > gwTimers[path.Key.Item1])
+                var isOccupied = Physics.OverlapBoxNonAlloc(
+                    startGw.Curve.PointA.ToVector3XZ(), new Vector3(4.5f, 4.5f, 4.5f), coll, Quaternion.identity, layerMask) > 0;
+                if (!isOccupied)
                 {
-                    var isOccupied = Physics.OverlapBoxNonAlloc(
-                        startGw.Curve.PointA.ToVector3XZ(), new Vector3(1.5f, 1.5f, 1.5f), coll, Quaternion.identity, layerMask) > 0;
-                    if (isOccupied) continue;
-
-                    gwTimers[path.Key.Item1] = timeScaled + (60f * Random.Range(0.85f, 1.15f) / startGw.Intensity);
+                    gwTimers[path.Key] = timeScaled + (60f * Random.Range(0.85f, 1.15f) / startGw.Intensity);
 
                     var randomPath = GetRandomPath(path.Value);
                     var carGo = Instantiate(carPrefab);
@@ -106,14 +107,12 @@ public class SimulationCarManager : MonoBehaviour
             }
 
             elapsed += Time.deltaTime;
+            SimualtionCoef = elapsed / duration;
             yield return null;
         }
 
 
-        CarsPassedMax = Mathf.Max(CarsPassedMax, carsResult);
         CarsPassedLast = carsResult;
-        Debug.Log(CarsPassedMax);
-
         currentCars.ForEach(car => { if (car.Item1 != null) Destroy(car.Item1.gameObject); });
         currentCars.Clear();
 

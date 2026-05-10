@@ -42,8 +42,7 @@ public class RoadSection : MonoBehaviour
 
     void Start()
     {
-        GraphNode sa = new(this, 0);
-        
+        GraphNode sa = new(this, 0); 
     }
 
     void Update()

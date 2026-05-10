@@ -24,3 +24,5 @@ MonoBehaviour:
   - gatewayId: 2
     roadStart: {x: 77, y: 20}
     roadfinish: {x: 100, y: 20}
+  carCoef: 1
+  lengthCoef: 0

@@ -12,6 +12,9 @@ public class LevelSO : ScriptableObject
     [Header("Въезды/выезды уровня (префабы)")]
     public GatewayStartStruct[] startGateways;      // 
     public GatewayFinishStruct[] finishGateways;    // 
+    [Header("Коэффициенты")]
+    public int carCoef;
+    public float lengthCoef;
 
     //[Header("Препятствия")]
     // public GameObject[] startGateways;

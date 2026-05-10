@@ -23,6 +23,8 @@ public class GuiController : MonoBehaviour
     [SerializeField]
     Button decrement;
     [SerializeField]
+    Button simulation;
+    [SerializeField]
     TMP_Text levelText;
 
     [SerializeField]
@@ -81,10 +83,17 @@ public class GuiController : MonoBehaviour
         levelText.text = (level + 1).ToString();
     }
 
+    public void OnSimulationReadyUpdate()
+    {
+        var isFinished = gm.IsLevelFinished;
+        simulation.interactable = isFinished;
+    }
+
     private void Awake()
     {
         OnDrawingStateButtonsUpdate();
         OnLevelUpdate();
         OnSlopeTypeUpdate();
     }
+
 }

@@ -16,11 +16,26 @@ MonoBehaviour:
   levelName: First
   startGateways:
   - gatewayId: 0
-    intensity: 10
-    roadStart: {x: -100, y: -20}
-    roadfinish: {x: -77, y: -20}
-    targetGatewayIds: 02000000
-  finishGateways:
+    intensity: 3
+    roadStart: {x: -100, y: -15}
+    roadfinish: {x: -77, y: -15}
+    targetGatewayIds: 0300000004000000
+  - gatewayId: 1
+    intensity: 3
+    roadStart: {x: 100, y: -10}
+    roadfinish: {x: 77, y: -10}
+    targetGatewayIds: 0300000004000000
   - gatewayId: 2
-    roadStart: {x: 77, y: 20}
-    roadfinish: {x: 100, y: 20}
+    intensity: 40
+    roadStart: {x: 0, y: 70}
+    roadfinish: {x: 0, y: 30}
+    targetGatewayIds: 0300000004000000
+  finishGateways:
+  - gatewayId: 3
+    roadStart: {x: -77, y: -10}
+    roadfinish: {x: -100, y: -10}
+  - gatewayId: 4
+    roadStart: {x: 77, y: -15}
+    roadfinish: {x: 100, y: -15}
+  carCoef: 1
+  lengthCoef: 0

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 using static RoadSection;
 
 [RequireComponent(typeof(GameManager))]
@@ -26,6 +27,7 @@ public class LevelEditor : MonoBehaviour
     Material indicatorMaterialWrong;
     [SerializeField]
     Material roadSnapMaterial;
+
 
 
     AbstractDrawingState drawingState;
@@ -65,7 +67,7 @@ public class LevelEditor : MonoBehaviour
         }
     }
 
-    void Start()
+    void Awake()
     {
         snapPointsMesh = BuildSnapPointMesh();
 
@@ -74,9 +76,10 @@ public class LevelEditor : MonoBehaviour
         snapPoints = new SnapPoints();
         if (gm.Nodes != null) snapPoints.RecalculateFully(gm);
 
-        ChangeDrawingState(EditorMode.Curve);
+        ChangeDrawingState(EditorMode.Straight);
 
     }
+
     public void OnAdd()
     {
         SnapPoints.RecalculateFully(gm);
@@ -212,10 +215,6 @@ public class LevelEditor : MonoBehaviour
         DrawAllSnapPoints();
     }
 
-    public void SimulateLevel()
-    {
-        GetComponent<SimulationCarManager>().StartSimulating(() => { });
-    }
     private void DrawAllSnapPoints()
     {
         foreach (var snapPoint in snapPoints.Dict.Keys)
@@ -243,7 +242,7 @@ public class LevelEditor : MonoBehaviour
 
     public void SetNone()
     {
-        ChangeDrawingState(EditorMode.Delete);
+        ChangeDrawingState(EditorMode.None);
     }
 
     public void SetUpSlope()

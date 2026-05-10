@@ -1,19 +1,22 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Events;
 
 [RequireComponent(typeof(LevelEditor), typeof(DecorationCarManager))]
 public class GameManager : MonoBehaviour
 {
     [SerializeField]
-    int from = 0;
-    [SerializeField]
-    int to = 0;
-    [SerializeField]
     LevelSO defaultLevel;
     [SerializeField]
     GameObject gatewayPrefab;
+    [SerializeField]
+    UnityEvent onLevelPass;
+    [SerializeField]
+    UnityEvent<LevelResult> onSimulationEnd;
 
+
+    LevelSO currentLevel;
     Graph graph = null;
 
     List<Gateway> startGateways = null;
@@ -28,7 +31,6 @@ public class GameManager : MonoBehaviour
 
     private Dictionary<int, int> roadIdToStartGateway;
     private Dictionary<int, int> roadIdToFinishGateway;
-
     private Dictionary<int, List<int>> startGwToFinishGw;
 
     public bool IsLevelFinished { get => isLevelFinished; private set => isLevelFinished = value; }
@@ -42,27 +44,24 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public float TotalNetworkLength
+    {
+        get
+        {
+            if (graph == null) return 0;
+            float res = 0;
+            foreach (var node in Nodes)
+            {
+                res += node.Value.Road.Curve.Length;
+            }
+            return res;
+        }
+    }
+
     [ContextMenu("Дебаг граф")]
     void LogGraph()
     {
         Debug.Log(graph);
-    }
-
-    [ContextMenu("Путь.")]
-    void FindPath()
-    {
-        var path = graph.FindPath(from, to);
-        if (path == null)
-        {
-            Debug.Log("No way");
-            return;
-        }
-
-        Debug.Log(string.Join("->", path));
-
-        var pathes = graph.FindKShortestPaths(from, to, 10);
-
-        foreach (var p in pathes) Debug.Log(string.Join("->", p));
     }
 
     public List<List<GraphNode>> FindKShortestPaths(int from, int to, int k)
@@ -97,10 +96,12 @@ public class GameManager : MonoBehaviour
             curLvl = defaultLevel;
         }
 
+        currentLevel = curLvl;
+
 
         roadIdToStartGateway = new();
         roadIdToFinishGateway = new();
-        startGwToFinishGw = new(); 
+        startGwToFinishGw = new();
 
         foreach (var start in curLvl.startGateways)
         {
@@ -174,7 +175,7 @@ public class GameManager : MonoBehaviour
                 }
             }
         }
-        
+
     }
 
     public void UpdateGatewayRoads(SnapPoints snapPoints)
@@ -187,7 +188,7 @@ public class GameManager : MonoBehaviour
             foreach (var road in outcomings)
             {
                 roadIdToStartGateway[road] = startGw.Id;
-                
+
             }
         }
         foreach (var finishGw in finishGateways)
@@ -217,19 +218,53 @@ public class GameManager : MonoBehaviour
             var startGw = gwPair.Key;
             foreach (var endGw in gwPair.Value)
             {
+
                 if (!currentPaths.ContainsKey((startGw, endGw)))
                 {
                     IsLevelFinished = false;
+                    onLevelPass.Invoke();
                     return;
-                } 
+                }
             }
         }
 
         IsLevelFinished = true;
-        Debug.Log("Level completed...");
+        onLevelPass.Invoke();
         return;
+    }
+
+    public void SimulateLevel()
+    {
+        var scManager = GetComponent<SimulationCarManager>();
+        scManager.StartSimulating(() =>
+        {
+            LevelResult res = new();
+            res.currentNumber = currentLevel.levelNumber;
+            res.cars = scManager.CarsPassedLast;
+            res.length = (int)TotalNetworkLength;
+            res.total = (int)(scManager.CarsPassedLast * currentLevel.carCoef - TotalNetworkLength * currentLevel.lengthCoef);
+            onSimulationEnd.Invoke(res);
+
+            var savedResult = PlayerPrefs.GetInt($"result_{res.currentNumber}");
+            if (savedResult < res.total) PlayerPrefs.SetInt($"result_{res.currentNumber}", res.total);
+            if (res.total > 0) PlayerPrefs.SetInt($"unlocked_{res.currentNumber + 1}", 1);
+        });
     }
 }
 
 
+public struct LevelResult
+{
+    public int currentNumber;
+    public int cars;
+    public int length;
+    public int total;
 
+    public bool IsPassed
+    {
+        get
+        {
+            return total > 0;
+        }
+    }
+}

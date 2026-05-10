@@ -1,17 +1,18 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 [RequireComponent(typeof(GameManager))]
 [RequireComponent(typeof(SimulationCarManager))]
 public class DecorationCarManager : MonoBehaviour
 {
-    int maxCar = 40;
 
     List<(Car, int, int, List<GraphNode>)> currentCars = new();
-    Dictionary<int, float> gwTimers = new();
+    Dictionary<(int, int), float> gwTimers = new();
     Dictionary<(int, int), List<List<GraphNode>>> allPathes = new();
 
     bool isGoing = true;
@@ -60,7 +61,7 @@ public class DecorationCarManager : MonoBehaviour
     {
         if (!isGoing) return;
 
-        Collider[] coll = new Collider[1];
+        Collider[] coll = new Collider[4];
 
         GameManager gm = gameObject.GetComponent<GameManager>();
         SimulationCarManager sim = gameObject.GetComponent<SimulationCarManager>();
@@ -72,33 +73,36 @@ public class DecorationCarManager : MonoBehaviour
         }
 
         currentCars.RemoveAll(car => car.Item1 == null);
-
-        foreach (var path in allPathes)
+        if (allPathes.Count > 0)
         {
+            var pathList = allPathes.ToList();
+            var path = pathList[Random.Range(0, allPathes.Count)];
+
             var startGw = gm.StartGateways.Where(gw => gw.Id == path.Key.Item1).First();
             var endGw = gm.EndGateways.Where(gw => gw.Id == path.Key.Item2).First();
             int layerMask = LayerMask.GetMask("car");
 
-            if (!gwTimers.ContainsKey(path.Key.Item1)) gwTimers[path.Key.Item1] = Time.time + 60f / startGw.Intensity;
+            if (!gwTimers.ContainsKey(path.Key)) gwTimers[path.Key] = Time.time + 60f / startGw.Intensity;
 
-            if (Time.time > gwTimers[path.Key.Item1])
+            if (Time.time > gwTimers[path.Key])
             {
-                if (currentCars.Count == maxCar) break;
-
                 var isOccupied = Physics.OverlapBoxNonAlloc(
-                    startGw.Curve.PointA.ToVector3XZ(), new Vector3(1.5f, 1.5f, 1.5f), coll, Quaternion.identity, layerMask) > 0;
-                if (isOccupied) continue;
+                    startGw.Curve.PointA.ToVector3XZ(), new Vector3(2.5f, 2.5f, 2.5f), coll, Quaternion.identity, layerMask) > 0;
+                if (!isOccupied)
+                {
 
-                gwTimers[path.Key.Item1] = Time.time + (60f * UnityEngine.Random.Range(0.85f, 1.15f) / startGw.Intensity);
+                    gwTimers[path.Key] = Time.time + (60f * UnityEngine.Random.Range(0.85f, 1.15f) / startGw.Intensity);
 
-                var randomPath = path.Value[UnityEngine.Random.Range(0, path.Value.Count)];
-                var carGo = Instantiate(sim.CarPrefab);
+                    var randomPath = path.Value[UnityEngine.Random.Range(0, path.Value.Count)];
+                    var carGo = Instantiate(sim.CarPrefab);
 
-                var carPathData = CarPathData.GetFromRoadSections(randomPath, startGw, endGw);
-                carGo.GetComponent<Car>().Initialize(carPathData, sim.RandomCarModel);
-                currentCars.Add((carGo.GetComponent<Car>(), path.Key.Item1, path.Key.Item2, randomPath));
+                    var carPathData = CarPathData.GetFromRoadSections(randomPath, startGw, endGw);
+                    carGo.GetComponent<Car>().Initialize(carPathData, sim.RandomCarModel);
+                    currentCars.Add((carGo.GetComponent<Car>(), path.Key.Item1, path.Key.Item2, randomPath));
+                }
             }
         }
+
 
         foreach (var car in currentCars)
         {

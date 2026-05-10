@@ -30,14 +30,15 @@ public class Car : MonoBehaviour
 
         currentCurve = 0;
 
-        CalculateSpeedPoints();
 
         var modelObj = Instantiate(carModelprefab);
         modelObj.transform.SetParent(transform);
+        modelObj.transform.position += transform.position;
+
+        CalculateSpeedPoints();
         gameObject.layer = LayerMask.NameToLayer("car");
-
-        transform.position = path[0].curve.PointA.ToVector3XZ();
-
+        transform.position = path[0].curve.PointA.ToVector3XZ(0);
+        Physics.SyncTransforms();
     }
 
     private void CalculateSpeedPoints()
@@ -83,12 +84,13 @@ public class Car : MonoBehaviour
         if (rayCastDist < 6f)
         {
             bool isDeadlock = BlockedBy != null && BlockedBy.BlockedBy == this;
-            bool hasPriority = isDeadlock && 
-                Vector3.Angle(transform.forward, BlockedBy.transform.forward) < 120f && 
+            bool hasPriority = isDeadlock &&
+                Vector3.Angle(transform.forward, BlockedBy.transform.forward) < 120f &&
                 GetInstanceID() < BlockedBy.GetInstanceID();
 
             if (!hasPriority) currentSpeed = 0;
-        };
+        }
+        ;
 
         totalDist += currentSpeed * timeDelta;
         currentCurveDist += currentSpeed * timeDelta;
