@@ -10,7 +10,7 @@ public class GameManager : MonoBehaviour
     [SerializeField]
     int to = 0;
     [SerializeField]
-    LevelSO levelSO;
+    LevelSO defaultLevel;
     [SerializeField]
     GameObject gatewayPrefab;
 
@@ -21,7 +21,6 @@ public class GameManager : MonoBehaviour
 
     Dictionary<(int, int), List<(int, int)>> currentPaths;
     bool isLevelFinished = false;
-    LevelMode levelMode = LevelMode.Editing;
 
     public IReadOnlyDictionary<(int, int), List<(int, int)>> CurrentPaths => currentPaths;
     public IReadOnlyList<Gateway> StartGateways => startGateways;
@@ -33,7 +32,6 @@ public class GameManager : MonoBehaviour
     private Dictionary<int, List<int>> startGwToFinishGw;
 
     public bool IsLevelFinished { get => isLevelFinished; private set => isLevelFinished = value; }
-    public LevelMode LevelMode { get => levelMode; private set => levelMode = value; }
 
     public IReadOnlyDictionary<int, GraphNode> Nodes
     {
@@ -92,6 +90,14 @@ public class GameManager : MonoBehaviour
         finishGateways = new List<Gateway>();
 
         LevelSO curLvl = LevelContext.CurrentLevel;
+
+        if (curLvl == null)
+        {
+            Debug.Log("No level");
+            curLvl = defaultLevel;
+        }
+
+
         roadIdToStartGateway = new();
         roadIdToFinishGateway = new();
         startGwToFinishGw = new(); 
@@ -115,6 +121,7 @@ public class GameManager : MonoBehaviour
             go.GetComponent<Gateway>().Initialize(finish.gatewayId, GatewayType.Finish, new(finish.roadStart, finish.roadfinish), -1);
             finishGateways.Add(go.GetComponent<Gateway>());
         }
+
     }
 
     public GraphNode Add(RoadSection roadComponent)
@@ -226,8 +233,3 @@ public class GameManager : MonoBehaviour
 
 
 
-public enum LevelMode
-{
-    Editing,
-    Calculating,
-}

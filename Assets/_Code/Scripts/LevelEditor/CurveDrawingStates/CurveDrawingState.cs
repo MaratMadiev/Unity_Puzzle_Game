@@ -1,8 +1,9 @@
-﻿using static SnapPoints;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using static RoadSection;
+using static SnapPoints;
 
 
 // я искренне сочувствую тем, кто это будет читать
@@ -76,7 +77,7 @@ public class CurveDrawingState : AbstractDrawingState
 
             if (Input.GetMouseButtonDown(0) && isRoadValid)
             {
-                ProcessLMB(currentSnaped, currentSnapPoint, hitPoint, validationResult);
+                if (!EventSystem.current.IsPointerOverGameObject()) ProcessLMB(currentSnaped, currentSnapPoint, hitPoint, validationResult);
             }
             if (Input.GetMouseButtonDown(1))
             {

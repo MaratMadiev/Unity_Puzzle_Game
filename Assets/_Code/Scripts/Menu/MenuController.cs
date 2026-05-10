@@ -72,10 +72,14 @@ public class MenuController : MonoBehaviour
         {
             GameObject obj = Instantiate(levelButtonPrefab, levelsContainer);
             Button button = obj.GetComponent<Button>();
+
+            bool locked = level.levelNumber != 1 && PlayerPrefs.GetInt($"unlocked_{level.levelNumber}") == 0; 
+
             var text = obj.GetComponentInChildren<TMP_Text>();
 
             Debug.Log(level.levelNumber);
-            text.text = $"Level {level.levelNumber.ToString()}";
+            text.text = locked ? "Locked..." : $"Level {level.levelNumber.ToString()}";
+            button.interactable = !locked;
             int id = level.levelNumber;
 
             button.onClick.AddListener(() =>

@@ -9,7 +9,6 @@ public class LevelEditor : MonoBehaviour
     int currentLevel = 0;
     EditorMode type = EditorMode.Straight;
     RoadType slopeType = RoadType.Flat;
-
     GameManager gm;
 
     [SerializeField]
@@ -27,7 +26,7 @@ public class LevelEditor : MonoBehaviour
     Material indicatorMaterialWrong;
     [SerializeField]
     Material roadSnapMaterial;
-    
+
 
     AbstractDrawingState drawingState;
 
@@ -37,14 +36,17 @@ public class LevelEditor : MonoBehaviour
     public Camera Cam { get => cam; }
     public GameObject RoadPrefab { get => roadPrefab; }
     public SnapPoints SnapPoints { get => snapPoints; }
+
+    public EditorMode Type { get { return type; } }
     public int CurrentLevel
     {
         get => currentLevel;
         set
         {
+            if (GetComponent<SimulationCarManager>().IsCurrentlySimulating) return;
             if (drawingState != null && !drawingState.IsCurrentlyDrawing)
             {
-                currentLevel = Math.Clamp(value, 0, GameRules.MaxLevel);
+                currentLevel = Math.Clamp(value, 0, GameRules.MaxLevel + 1);
             }
         }
     }
@@ -53,8 +55,10 @@ public class LevelEditor : MonoBehaviour
     public Material IndicatorMaterialWrong { get => indicatorMaterialWrong; private set => indicatorMaterialWrong = value; }
     public RoadType SlopeType
     {
-        get => slopeType; private set
+        get => slopeType;
+        private set
         {
+            if (GetComponent<SimulationCarManager>().IsCurrentlySimulating) return;
             if (value == RoadType.Upward && currentLevel == GameRules.MaxLevel) return;
             if (value == RoadType.Downward && currentLevel == 0) return;
             slopeType = value;
@@ -165,8 +169,9 @@ public class LevelEditor : MonoBehaviour
         return mesh;
     }
 
-    void ChangeDrawingState(EditorMode newCurveType)
+    private void ChangeDrawingState(EditorMode newCurveType)
     {
+        if (GetComponent<SimulationCarManager>().IsCurrentlySimulating) return;
         type = newCurveType;
 
         drawingState?.Exit();
@@ -204,58 +209,13 @@ public class LevelEditor : MonoBehaviour
     {
         levelCollider.transform.position = new Vector3(0, currentLevel * GameRules.LevelHeight, 0);
         drawingState.Update();
-
         DrawAllSnapPoints();
-
-        TestChange();
     }
 
-    private void TestChange()
+    public void SimulateLevel()
     {
-        if (Input.GetKeyDown(KeyCode.Alpha0))
-        {
-            ChangeDrawingState(EditorMode.None);
-        }
-
-        if (Input.GetKeyDown(KeyCode.Alpha9))
-        {
-            ChangeDrawingState(EditorMode.Delete);
-        }
-        if (Input.GetKeyDown(KeyCode.Alpha1))
-        {
-            ChangeDrawingState(EditorMode.Straight);
-        }
-
-        if (Input.GetKeyDown(KeyCode.Alpha2))
-        {
-            ChangeDrawingState(EditorMode.Curve);
-        }
-
-        if (Input.GetKeyDown(KeyCode.Alpha4))
-        {
-            CurrentLevel = (currentLevel + 1) % (GameRules.MaxLevel + 1);
-            Debug.Log("level changed: " + currentLevel);
-        }
-
-        if (Input.GetKeyDown(KeyCode.Alpha6))
-        {
-            SlopeType = (RoadType)Math.Clamp((int)(slopeType - 1), 0, 2);
-            Debug.Log("slopeType changed: " + slopeType);
-        }
-
-        if (Input.GetKeyDown(KeyCode.Alpha7))
-        {
-            SlopeType = (RoadType)Math.Clamp((int)(slopeType + 1), 0, 2);
-            Debug.Log("slopeType changed: " + slopeType);
-        }
-
-        if (Input.GetKeyDown(KeyCode.Return))
-        {
-            GetComponent<SimulationCarManager>().StartSimulating();
-        }
-
+        GetComponent<SimulationCarManager>().StartSimulating(() => { });
     }
-
     private void DrawAllSnapPoints()
     {
         foreach (var snapPoint in snapPoints.Dict.Keys)
@@ -264,6 +224,51 @@ public class LevelEditor : MonoBehaviour
                 snapPoint.xz.ToVector3XZ() + new Vector3(0, snapPoint.level * GameRules.LevelHeight, 0),
                 Quaternion.identity, roadSnapMaterial, 0);
         }
+    }
+
+    public void SetStraight()
+    {
+        ChangeDrawingState(EditorMode.Straight);
+    }
+
+    public void SetCurve()
+    {
+        ChangeDrawingState(EditorMode.Curve);
+    }
+
+    public void SetDelete()
+    {
+        ChangeDrawingState(EditorMode.Delete);
+    }
+
+    public void SetNone()
+    {
+        ChangeDrawingState(EditorMode.Delete);
+    }
+
+    public void SetUpSlope()
+    {
+        SlopeType = RoadType.Upward;
+    }
+
+    public void SetDownSlope()
+    {
+        SlopeType = RoadType.Downward;
+    }
+
+    public void SetFlatSlope()
+    {
+        SlopeType = RoadType.Flat;
+    }
+
+    public void IncrementLevel()
+    {
+        CurrentLevel++;
+    }
+
+    public void DecrementLevel()
+    {
+        CurrentLevel--;
     }
 }
 

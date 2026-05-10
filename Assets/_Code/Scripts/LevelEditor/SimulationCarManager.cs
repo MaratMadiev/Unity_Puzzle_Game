@@ -1,12 +1,14 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.VisualScripting;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class SimulationCarManager : MonoBehaviour
 {
-    public int CarsPassed { get; private set; }
+    public int CarsPassedMax { get; private set; }
+    public int CarsPassedLast { get; private set; }
     public bool IsCurrentlySimulating { get; private set; }
 
     [SerializeField]
@@ -19,15 +21,16 @@ public class SimulationCarManager : MonoBehaviour
     public GameObject CarPrefab { get => carPrefab; }
     public GameObject RandomCarModel { get => carModelPrefabs[Random.Range(0, carModelPrefabs.Count)]; }
 
-    public void StartSimulating()
+    public void StartSimulating(Action callback)
     {
         if (!GetComponent<GameManager>().IsLevelFinished) return;
         if (IsCurrentlySimulating) return;
-        StartCoroutine(SimulateCoroutine());
+        StartCoroutine(SimulateCoroutine(callback));
     }
     
-    IEnumerator SimulateCoroutine()
+    IEnumerator SimulateCoroutine(Action callback)
     {
+        GetComponent<LevelEditor>().SetNone();
         GetComponent<DecorationCarManager>().IsGoing = false;
         IsCurrentlySimulating = true;
 
@@ -105,8 +108,11 @@ public class SimulationCarManager : MonoBehaviour
             elapsed += Time.deltaTime;
             yield return null;
         }
-        CarsPassed = Mathf.Max(CarsPassed, carsResult);
-        Debug.Log(CarsPassed);
+
+
+        CarsPassedMax = Mathf.Max(CarsPassedMax, carsResult);
+        CarsPassedLast = carsResult;
+        Debug.Log(CarsPassedMax);
 
         currentCars.ForEach(car => { if (car.Item1 != null) Destroy(car.Item1.gameObject); });
         currentCars.Clear();
@@ -114,6 +120,9 @@ public class SimulationCarManager : MonoBehaviour
 
         IsCurrentlySimulating = false;
         GetComponent<DecorationCarManager>().IsGoing = true;
+
+        GetComponent<LevelEditor>().SetStraight();
+        callback.Invoke();
     }
 
     private static List<(List<GraphNode>, float)> CalcLengths(List<List<GraphNode>> kShortest)

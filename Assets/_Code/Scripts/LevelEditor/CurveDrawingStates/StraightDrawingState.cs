@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Linq;
 using UnityEditor.MPE;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using static RoadSection;
 using static SnapPoints;
 
@@ -71,7 +72,7 @@ public class StraightDrawingState : AbstractDrawingState
 
             if (isRoadValid && Input.GetMouseButtonDown(0))
             {
-                ProcessLMB(currentSnaped, currentSnapPoint, hitPoint, validationResult);
+                if (!EventSystem.current.IsPointerOverGameObject()) ProcessLMB(currentSnaped, currentSnapPoint, hitPoint, validationResult);
             }
             if (Input.GetMouseButtonDown(1))
             {
